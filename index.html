@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+	<title>Mapping the access to networking - prototype</title>
+	<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+
+<article>
+	<canvas id="container" width="600" height="400"></canvas>
+	<div class="text">
+		<h1>Mapping the access to networking (prototype)</h1>
+		<em>Stylized interactive map based on router density <sup><a href="http://edc13.education.ed.ac.uk/amyw/2013/02/17/digital-divide-cultural-relativism/">[1]</a><a href="http://www.chrisharrison.net/index.php/Visualizations/InternetMap">[2]</a></sup></em>
+		<br><br>
+		Router density:<br>
+		<div class="legend">
+			<span class="low">low</span>
+			<span class="high">high</span>
+		</div>
+	</div>
+</article>
+
+
+<!-- interactive UI lib -->
+<script src="lib/dat.gui.min.js"></script>
+
+<!-- particle simulation -->
+<script src="js/vector.js"></script>
+<script src="js/particle.js"></script>
+<script src="js/force.js"></script>
+
+<!-- reading pixel data -->
+<script src="js/readdata.js"></script>
+
+<!-- geometry helper -->
+<script src="js/rect.js"></script>
+
+<!-- actual world map logic for pulling it all together -->
+<script src="js/world.js"></script>
+<script>
+var canvas = document.querySelector("#container");
+var ctx = canvas.getContext("2d");
+var spawn = [];
+
+var myWorld = new World();
+
+var imgPath = "img/";
+
+var routers = new Image();
+var img = new Image();
+var worldImage = new Image();
+var worldOutline = new Image();
+
+var canvasArea = new Rect(0, 0, 600, 400);
+
+pixelReader.init(ctx);
+
+// load the routers distribution map and read the data for later use
+routers.onload = function () {
+	ctx.drawImage(this, 0, 0);
+	spawn = pixelReader.readPixels(600, 400);
+	ctx.clearRect(0, 0, 600, 400);
+
+	// then kick of the actual world animation
+	startWorld();
+}
+routers.src = imgPath + "world-routers.png";
+
+
+function startWorld() {
+	img.onload = function () {
+		ctx.drawImage(this, 0, 0);
+		var pixels = pixelReader.readPixels(600, 400);
+		ctx.clearRect(0, 0, 600, 400);
+		myWorld.init(ctx, 600, 400, pixels, 25);
+
+		setupGUI();
+	}
+	img.src = imgPath + "world-colored.png";
+	worldImage.src = imgPath + "world-display.png";
+	worldOutline.src = imgPath + "world-outline.png";
+}
+
+
+function setupGUI() {	
+  	var gui = new dat.GUI();
+  	var maxAgeCtrl = gui.add(myWorld, 'maxAge', 1, 5000).step(100);
+  	var maxParticlesCtrl = gui.add(myWorld, 'maxParticles', 1, 5000).step(100);
+	var retractCtrl = gui.add(myWorld, 'movement', 0.5, 1.5, 2).step(0.1);
+	var decayCtrl = gui.add(myWorld, 'distance', 0, 1, 2).step(0.1);
+	var concentrationsCtrl = gui.add(myWorld, 'concentrations', 0, 5).step(0.25);
+
+  	gui.add(myWorld, 'coloredContinents');
+  	gui.add(myWorld, 'map', ['distribution', 'outline']);
+
+	maxAgeCtrl.onFinishChange(function (value) {
+		myWorld.setProperty('maxAge', value);
+	});
+	maxParticlesCtrl.onFinishChange(function (value) {
+		myWorld.setProperty('maxParticles', value);
+	});
+	retractCtrl.onFinishChange(function(value) {
+	  myWorld.setProperty('retract', value);
+	});
+	decayCtrl.onFinishChange(function(value) {
+	  myWorld.setProperty('decay', value);
+	});
+	concentrationsCtrl.onFinishChange(function(value) {
+	  myWorld.setProperty('concentrations', value);
+	});
+}
+</script>
+</body>
+</html>
